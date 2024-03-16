@@ -1,0 +1,138 @@
+\documentclass[12pt,leqno,subeqn,aer,aertt,harvard,ulem]{article}
+        %Included for Gather Purpose only:
+        %input "literature.bib"
+%\usepackage{aer}
+\usepackage{harvard}
+\usepackage{ulem}
+\usepackage{amsmath}
+\usepackage{amsthm}
+%\usepackage{subeqn}
+\usepackage{mathrsfs} % this is for Vetter's differentation operator
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{multicol}
+\usepackage{afterpage}
+%\usepackage{footmisc}
+\usepackage[justification=centering]{caption}
+\usepackage{pslatex}
+\usepackage{arydshln} % for dashed lines in arrays
+\usepackage[top=0.95in, right=0.95in, left=0.95in, bottom=0.95in]{geometry}
+
+\usepackage[margin=10pt]{subfig}
+%\usepackage[mathrefs]{lineno}
+\usepackage{morefloats}
+\usepackage[nolists,tablesfirst]{endfloat}
+\renewcommand{\efloatseparator}{}
+
+\hypersetup{bookmarksnumbered=true,naturalnames=true,pdfhighlight=/N,citebordercolor={1 1
+1},linkbordercolor={1 1 1},colorlinks=true,anchorcolor=black,linkcolor=black,citecolor=black,
+breaklinks=true}
+
+
+\long\def\symbolfootnote[#1]#2{\begingroup%
+\def\thefootnote{\fnsymbol{footnote}}\footnote[#1]{#2}\endgroup}
+
+
+\renewcommand{\emph}{\textit}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{definition}[theorem]{Definition}
+\newlength{\oldbaselineskip}
+\newlength{\newbaselineskip}
+\begin{document}
+    \setlength{\oldbaselineskip}{\baselineskip}
+    \setlength{\newbaselineskip}{1.5\baselineskip}
+    \setlength{\baselineskip}{\newbaselineskip}
+    \abovedisplayskip=2pt
+\belowdisplayskip=2pt
+\abovedisplayshortskip=2pt
+\belowdisplayshortskip=2pt
+%\nocite{*}
+{\large Dynare Add On Readme for\\ {\it Solving DSGE Models with a Nonlinear Moving Average}}\\
+by Hong Lan\symbolfootnote[2]{Humboldt-Universit\"at zu Berlin, Institut f\"ur Wirtschaftstheorie II, Spandauer Stra\ss{}e 1, 10178 Berlin, Germany; Email:                                       \href{mailto:lanhong@cms.hu-berlin.de}{lanhong@cms.hu-berlin.de}} and Alexander Meyer-Gohde\symbolfootnote[4]{Humboldt-Universit\"at zu Berlin, Institut f\"ur Wirtschaftstheorie II, Spandauer Stra\ss{}e 1, 10178 Berlin, Germany;
+         Tel.: +49-30-2093 5720; Fax: +49-30-2093 5696; E-Mail: \href{mailto:alexander.meyer-gohde@wiwi.hu-berlin.de}{alexander.meyer-gohde@wiwi.hu-berlin.de}}
+\section{Overview}
+This version: 1.0.8, \today
+
+This is a quick guide for the add-on for Dynare (see \url{www.dynare.org}) in MATLAB to implement our nonlinear moving average perturbation solution. Tested with Dynare 4.2.1,  4.2.2, 4.2.4, 4.2.5, and 4.3.0 and MATLAB 7.9.0.
+
+\section{Setup}
+
+Add the directory containing the unzipped files to you MATLAB path.
+
+\section{Usage}
+
+You can now call our set of programs directly from your .mod files by placing
+\begin{verbatim}
+[MA_]=nonlinear_MA(M_,oo_,options_);
+\end{verbatim}
+after a call to Dynare's stochastic simulation alogrithm. E.g.,
+\begin{verbatim}
+stoch_simul(order = 3);
+[MA_]=nonlinear_MA(M_,oo_,options_);
+\end{verbatim}
+would have Dynare produce a third-order approximation, calculating IRFs out 40 periods. Our program would then do the same using our alternative policy function. In general, our programs `adapt' to the options you send to Dynare. So, for example
+\begin{verbatim}
+stoch_simul(irf=0, order = 2, periods=100, drop=0);
+[MA_]=nonlinear_MA(M_,oo_,options_);
+\end{verbatim}
+would produce a second-order approximation, no impulses, and a 100 period simulation with no initial periods discarded, both from Dynare and under our alternative infinite moving average policy function. 
+
+Should you want to override defaults taken from Dynare or if you would like to calculate and plot the nonlinear kernel functions (default is not to, as this can be very computationally intensive, especially for third order approximations), create a structure array (named, e.g., \verb+myoptions+) in MATLAB and pass it to our programs as follows
+\begin{verbatim}
+[MA_]=nonlinear_MA(M_,oo_,options_,myoptions);
+\end{verbatim}
+You can change any default option by adding a filed to the structure array with the name of the option (see next section) and setting it equal to the desired value.
+
+If you only want results to be produced  by a subset of variables, you place the variables after \verb+stoch_simul+ as usual in Dynare, but then you need to pace the resulting \verb+var_list_+ to \verb+nonlinear_MA+
+\begin{verbatim}
+stoch_simul(order = 3) c y;
+[MA_]=nonlinear_MA(M_,oo_,options_,[],var_list_);
+\end{verbatim}
+Accordingly, if you also want to change any default options and produce results only for the subset of variables as indicated to Dynare, then
+\begin{verbatim}
+stoch_simul(order = 3) c y;
+[MA_]=nonlinear_MA(M_,oo_,options_,myoptions,var_list_);
+\end{verbatim}
+
+\section{Options}
+
+Here the set of options are listed. The symbol \verb+***+ is the user-defined name of the structure array passed to \verb+nonlinear_MA+ as a fourth argument (\verb+myoptions+ was the example name used in the previous section).
+
+
+\begin{itemize}
+
+\item \verb+***.calculate_simulations+ takes on the value $1$ (calculate simulations) or $0$ (don't calculate simulations). Default is $0$ if Dynare's \verb+options.periods+$=0$ and $1$ otherwise.
+
+\item \verb+***.plot_simulations+ takes on the value $1$ (plot simulations) or $0$ (don't plot simulations). Default is $0$ if Dynare's \verb+options.periods+$=0$ and $1$ otherwise. If \verb+***.calculate_simulations+$=0$, this option is ignored.
+
+\item \verb+***.shock_scale+ is a scalar that scales the shocks used in IRFs with respect to their standard deviations. E.g., a value of $-10$ would lead any IRFs calculated to be impulses to minus 10 standard deviation shocks. Default is $1$.
+
+\item \verb+***.calculate_irf+ takes on the value $1$ (calculate impulse responses) or $0$ (don't calculate impulse responses).  Default is $0$ if Dynare's \verb+options.irf+$=0$ and $1$ otherwise.
+
+\item \verb+***.plot_irf+ takes on the value $1$ (plot impulse responses) or $0$ (don't plot impulse responses). Default is $0$ if Dynare's \verb+options.irf+$=0$ and $1$ otherwise. If \verb+***.calculate_irf+$=0$, this option is ignored.
+\end{itemize}
+\section{Example}
+
+Placing
+\begin{verbatim}
+stoch_simul(irf=100, order = 3, periods=200, drop=50);
+my_nonlinear_MA_options.plot_simulations=0;
+my_nonlinear_MA_options.shock_scale=-10;
+my_nonlinear_MA_options.plot_irf=0;
+[MA_]=nonlinear_MA(M_,oo_,options_,my_nonlinear_MA_options);
+\end{verbatim}
+at the end of your .mod file, our programs will
+\begin{itemize}
+\item not plot the simulation (200 periods long) that it calculates;
+\item will calculate impulse responses to negative 10 standard deviation shocks,
+\item but will not plot these impulses.
+\end{itemize}
+\end{document}
